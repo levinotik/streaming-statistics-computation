@@ -42,20 +42,23 @@ usage = "Usage: ./wagon [path(s) to .csv files]"
 
 showStats :: Stats -> Text 
 showStats Stats{..} = 
-  let texts = [ "sessionId columns: " <> (pack . show) (sessionIdColumn statsColumnCount)
-              , "page columns: " <> (pack . show) (pageColumn statsColumnCount)
-              , "latency columns: " <> (pack . show) (latencyColumn statsColumnCount)
-              , "timeOnPage columns: " <> (pack . show) (timeOnPageColumn statsColumnCount)
-              , "null sessionId columns: " <> (pack . show)  (sessionIdColumn statsColumnNullCount)
-              , "null page columns: " <> (pack . show) (pageColumn statsColumnNullCount)
-              , "null latency columns: " <> (pack . show) (latencyColumn statsColumnNullCount)
-              , "null timeOnPage columns: " <> (pack . show) (timeOnPageColumn statsColumnNullCount)
-              , "latency aggregate " <> (pack . show) statsLatencyAgg
-              , "timeOnPage aggregate " <> (pack . show) statsTimeOnPageAgg
-              , "sessionId text stats " <> (pack . show) sessionIdTextStats
-              , "page text stats " <> (pack . show) pageTextStats
+  let texts = [ "sessionId columns: " <> showText (sessionIdColumn statsColumnCount)
+              , "page columns: " <> showText (pageColumn statsColumnCount)
+              , "latency columns: " <> showText (latencyColumn statsColumnCount)
+              , "timeOnPage columns: " <> showText (timeOnPageColumn statsColumnCount)
+              , "null sessionId columns: " <> showText  (sessionIdColumn statsColumnNullCount)
+              , "null page columns: " <> showText (pageColumn statsColumnNullCount)
+              , "null latency columns: " <> showText (latencyColumn statsColumnNullCount)
+              , "null timeOnPage columns: " <> showText (timeOnPageColumn statsColumnNullCount)
+              , "latency aggregate " <> showText statsLatencyAgg
+              , "timeOnPage aggregate " <> showText statsTimeOnPageAgg
+              , "sessionId text stats " <> showText sessionIdTextStats
+              , "page text stats " <> showText pageTextStats
               ]
   in T.unlines texts
+
+showText :: Show a => a -> Text
+showText = pack . show
 
 foldStats :: Stats -> Metric -> Stats
 foldStats (Stats s1 s2 s3 s4 s5 s6) metric = 
