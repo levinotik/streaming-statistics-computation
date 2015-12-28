@@ -46,7 +46,7 @@ showStats Stats{..} =
               , "page columns: " <> (pack . show) (pageColumn statsColumnCount)
               , "latency columns: " <> (pack . show) (latencyColumn statsColumnCount)
               , "timeOnPage columns: " <> (pack . show) (timeOnPageColumn statsColumnCount)
-              , "sessionId columns: " <> (pack . show)  (sessionIdColumn statsColumnNullCount)
+              , "null sessionId columns: " <> (pack . show)  (sessionIdColumn statsColumnNullCount)
               , "null page columns: " <> (pack . show) (pageColumn statsColumnNullCount)
               , "null latency columns: " <> (pack . show) (latencyColumn statsColumnNullCount)
               , "null timeOnPage columns: " <> (pack . show) (timeOnPageColumn statsColumnNullCount)
