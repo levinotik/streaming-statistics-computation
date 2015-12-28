@@ -3,32 +3,19 @@ module Main where
 
 import Data.Conduit
 import qualified Data.Conduit.List as CL
-import Data.Conduit.List (sinkNull, isolate)
 import qualified Data.Conduit.Binary as CB
 import Data.CSV.Conduit
 import Data.Text (Text, pack)
 import qualified Data.Text as T
 import Data.CSV.Conduit.Conversion
 import Control.Monad
-import Data.Text.Encoding (decodeUtf8)
-import qualified Data.ByteString.Char8 as B8
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lex.Fractional as LF
 import Data.Vector (fromList)
 import Control.Error.Util (hush)
-import Control.Monad.Catch (MonadThrow)
-import Control.Monad.Trans.Resource (MonadResource, ResourceT)
-import Data.Void (Void)
-import Control.Monad.IO.Class
-import qualified Data.Conduit.Lazy as CLazy
-import Data.Map (Map)
-import qualified Data.Map.Strict as Map
-import Control.Monad.Identity
+import Control.Monad.Trans.Resource (ResourceT)
 import Model
 import Control.DeepSeq
 import System.Environment (getArgs)
 import System.Exit (die)
-import Text.Show.Pretty
 import Data.Maybe
 import Data.Monoid ((<>))
 import qualified Data.Text.IO as TIO
@@ -50,10 +37,11 @@ rowsToMetrics path = CB.sourceFile path $=
 computeStats :: Consumer Metric (ResourceT IO) Stats 
 computeStats = CL.fold foldStats defStats  
   
+usage :: String
 usage = "Usage: ./wagon [path(s) to .csv files]"  
 
 showStats :: Stats -> Text 
-showStats stats@Stats{..} = 
+showStats Stats{..} = 
   let texts = [ "sessionId columns: " <> (pack . show) (sessionIdColumn statsColumnCount)
               , "page columns: " <> (pack . show) (pageColumn statsColumnCount)
               , "latency columns: " <> (pack . show) (latencyColumn statsColumnCount)
@@ -69,7 +57,8 @@ showStats stats@Stats{..} =
               ]
   in T.unlines texts
 
-foldStats stats@(Stats s1 s2 s3 s4 s5 s6) metric = 
+foldStats :: Stats -> Metric -> Stats
+foldStats (Stats s1 s2 s3 s4 s5 s6) metric = 
   let colCount        = trackColCount s1
       nullCount       = trackNulls s2 metric
       latencyCount    =  (latencyColumn colCount - latencyColumn nullCount)
@@ -109,16 +98,16 @@ foldStats stats@(Stats s1 s2 s3 s4 s5 s6) metric =
                _       -> Average (Just (fromMaybe 0 (unRunningTotal newRtotal) / count))
          in NumberAggregate newMin newMax newAvg newRtotal
     trackTimeOnPageAgg agg _ _ = agg
-    comparing metric value comparison = maybe (metric $ Just value) (metric . Just . comparison value)
+    comparing m value comparison = maybe (m $ Just value) (m . Just . comparison value)
     trackText :: TextStats -> Text -> Double -> TextStats
     trackText (TextStats (ShortestCount shortest) (LongestCount longest) (Average average) (RunningTotal rTotal)) text colCount =
-      let newShortest = maybe (ShortestCount (Just (TextCount text 1))) (\t -> calcShortest t text) shortest 
-          newLongest = maybe (LongestCount (Just (TextCount text 1))) (\t -> calcLongest t text) longest 
+      let newShortest = maybe (ShortestCount (Just (TextCount text 1))) (`calcShortest` text) shortest 
+          newLongest = maybe (LongestCount (Just (TextCount text 1))) (`calcLongest` text) longest 
           newRtotal = maybe (RunningTotal $ Just $ fromIntegral $ T.length text) (RunningTotal . Just . (+ (fromIntegral $ T.length text))) rTotal
           newAvg =  case average of 
             Nothing -> Average (Just $ fromIntegral $ T.length text)
             _       -> Average (Just (fromMaybe 0 (unRunningTotal newRtotal) / colCount))
-      in TextStats newShortest newLongest newAvg newRtotal 
+      in TextStats newShortest newLongest newAvg newRtotal   
       
 calcShortest :: TextCount -> Text -> ShortestCount
 calcShortest t text = if textCountText t == text 
